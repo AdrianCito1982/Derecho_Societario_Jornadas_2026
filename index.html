@@ -136,24 +136,36 @@ body {
    ========================================================= */
 
 #book-wrapper {
-
     width: 100%;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    overflow: hidden;
-
+    height: 78vh;
     min-height: 60vh;
 
-    max-height: 78vh;
+    display: block;
+
+    overflow: auto;
+
+    position: relative;
 
     border-radius: 8px;
 
-    touch-action: none;
+    touch-action: pan-x pan-y;
+
+    cursor: default;
+
+    scrollbar-width: thin;
+}
+
+/*
+   Cuando estamos haciendo zoom,
+   el cursor indica que podemos desplazar
+   el documento.
+*/
+#book-wrapper.zoomed {
+    cursor: grab;
+}
+
+#book-wrapper.zoomed:active {
+    cursor: grabbing;
 }
 
 
@@ -162,7 +174,6 @@ body {
    ========================================================= */
 
 #book {
-
     position: relative;
 
     width: 100%;
@@ -175,10 +186,9 @@ body {
 
     margin: 0 auto;
 
-    transition:
-        transform
-        0.18s
-        ease;
+    transform-origin: top left;
+
+    transition: transform 0.12s ease;
 }
 
 
@@ -1838,7 +1848,7 @@ prevBtn.addEventListener(
         */
 
         pageFlip.flipPrev(
-            "top"
+            "bottom"
         );
     }
 );
@@ -1915,19 +1925,169 @@ function updateZoom() {
         Math.max(
             0.65,
             Math.min(
-                2.5,
+                3.0,
                 zoom
             )
         );
 
-
     bookElement.style.transform =
         `scale(${zoom})`;
 
-
     zoomResetBtn.textContent =
         `${Math.round(zoom * 100)}%`;
+
+
+    /*
+       Cuando estamos ampliados,
+       activamos el modo lectura/paneo.
+    */
+
+    if (zoom > 1.01) {
+
+        bookWrapper.classList.add(
+            "zoomed"
+        );
+
+        /*
+           El flipbook deja de recibir
+           los eventos del mouse.
+
+           Así podemos arrastrar el documento
+           sin pasar páginas accidentalmente.
+        */
+
+        bookElement.style.pointerEvents =
+            "none";
+
+    } else {
+
+        bookWrapper.classList.remove(
+            "zoomed"
+        );
+
+        bookElement.style.pointerEvents =
+            "auto";
+    }
 }
+
+
+/* =========================================================
+   PANEo DEL DOCUMENTO AMPLIADO
+   ========================================================= */
+
+let isPanning = false;
+
+let panStartX = 0;
+let panStartY = 0;
+
+let scrollStartLeft = 0;
+let scrollStartTop = 0;
+
+
+bookWrapper.addEventListener(
+    "pointerdown",
+    function(event) {
+
+        if (zoom <= 1.01) {
+            return;
+        }
+
+        /*
+           Solamente paneamos con botón izquierdo
+           del mouse o touch.
+        */
+
+        if (
+            event.pointerType === "mouse" &&
+            event.button !== 0
+        ) {
+            return;
+        }
+
+        isPanning = true;
+
+        panStartX = event.clientX;
+        panStartY = event.clientY;
+
+        scrollStartLeft =
+            bookWrapper.scrollLeft;
+
+        scrollStartTop =
+            bookWrapper.scrollTop;
+
+        bookWrapper.classList.add(
+            "zoomed"
+        );
+
+        bookWrapper.setPointerCapture(
+            event.pointerId
+        );
+
+        event.preventDefault();
+    }
+);
+
+
+bookWrapper.addEventListener(
+    "pointermove",
+    function(event) {
+
+        if (
+            !isPanning ||
+            zoom <= 1.01
+        ) {
+            return;
+        }
+
+        const dx =
+            event.clientX -
+            panStartX;
+
+        const dy =
+            event.clientY -
+            panStartY;
+
+
+        bookWrapper.scrollLeft =
+            scrollStartLeft -
+            dx;
+
+        bookWrapper.scrollTop =
+            scrollStartTop -
+            dy;
+
+        event.preventDefault();
+    }
+);
+
+
+bookWrapper.addEventListener(
+    "pointerup",
+    function(event) {
+
+        isPanning = false;
+
+        try {
+
+            bookWrapper.releasePointerCapture(
+                event.pointerId
+            );
+
+        } catch (error) {
+            /* nada */
+        }
+    }
+);
+
+
+bookWrapper.addEventListener(
+    "pointercancel",
+    function() {
+
+        isPanning = false;
+
+    }
+);
 
 
 /* =========================================================
@@ -2266,7 +2426,7 @@ document.addEventListener(
             event.preventDefault();
 
             pageFlip.flipPrev(
-                "top"
+                "bottom"
             );
         }
 
