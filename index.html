@@ -204,7 +204,7 @@
 <header>
 
   <div class="titulo">
-    Mi revista digital
+    Derecho Societario Jornadas 2026
   </div>
 
   <div class="controles">
@@ -225,7 +225,7 @@
 
     <a
       class="descargar"
-      href="Derecho_Societario_Jornadas_2026"
+      href="Derecho_Societario_Jornadas_2026.pdf"
       download
     >
       ⬇ Descargar PDF
@@ -282,7 +282,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
 
-const PDF = "Derecho_Societario_Jornadas_2026";
+/*
+  ARCHIVO PDF
+*/
+
+const PDF =
+"Derecho_Societario_Jornadas_2026.pdf";
 
 
 let documento = null;
@@ -343,6 +348,9 @@ async function iniciar() {
 
     estado.textContent =
       "Error al cargar la revista";
+
+    pagina.textContent =
+      "Error";
 
   }
 
@@ -500,10 +508,6 @@ async function ajustarTamano() {
     alto + "px";
 
 
-  /*
-    En celular ocultamos la segunda página.
-  */
-
   if (movil) {
 
     hojaDerecha.style.display =
@@ -625,11 +629,6 @@ async function mostrarPaginas(
   }
 
   else {
-
-    /*
-      La página actual siempre
-      queda a la izquierda.
-    */
 
     await dibujarPagina(
       paginaActual,
