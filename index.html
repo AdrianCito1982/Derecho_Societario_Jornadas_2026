@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Mi revista digital</title>
+  <title>Derecho Societario Jornadas 2026</title>
 
   <style>
     * {
@@ -152,7 +152,7 @@
 
     <button id="pantalla">⛶</button>
 
-    <a id="descargar" href="revista.pdf" download>
+    <a id="descargar" href="Derecho_Societario_Jornadas_2026.pdf" download>
       ⬇ Descargar PDF
     </a>
 
@@ -222,7 +222,7 @@ async function iniciar() {
   try {
 
     pdf = await pdfjsLib
-      .getDocument("revista.pdf")
+      .getDocument("Derecho_Societario_Jornadas_2026.pdf")
       .promise;
 
     barra.max = pdf.numPages;
