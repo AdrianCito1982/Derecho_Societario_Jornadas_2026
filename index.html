@@ -1,1 +1,502 @@
-<!DOCTYPE html> <html lang="es"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Mi revista digital</title> <style> * { box-sizing: border-box; } html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; font-family: Arial, sans-serif; background: #202124; color: white; } header { height: 58px; background: #111214; display: flex; align-items: center; justify-content: space-between; padding: 8px 15px; } .titulo { font-size: 18px; font-weight: bold; } .controles { display: flex; align-items: center; gap: 6px; } button, a { border: 1px solid #555; background: #292a2e; color: white; padding: 8px 11px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 14px; } button:hover, a:hover { background: #404145; } #pagina { min-width: 100px; text-align: center; } #visor { height: calc(100vh - 98px); display: flex; align-items: center; justify-content: center; overflow: auto; padding: 20px; background: radial-gradient(circle at center, #414247, #202124); } #libro { display: flex; align-items: center; justify-content: center; transform-origin: center center; } canvas { background: white; box-shadow: 0 8px 25px rgba(0,0,0,.5); display: block; } #derecha { border-left: 1px solid #999; } footer { height: 40px; background: #111214; display: flex; align-items: center; padding: 5px 15px; gap: 10px; } #barra { flex: 1; } @media (max-width: 700px) { .titulo { display: none; } header { justify-content: center; } #descargar { font-size: 0; } #descargar::after { content: "⬇"; font-size: 16px; } #visor { padding: 8px; } } </style> </head> <body> <header> <div class="titulo"> Mi revista digital </div> <div class="controles"> <button id="anterior">‹</button> <span id="pagina"> Cargando... </span> <button id="siguiente">›</button> <button id="menos">−</button> <button id="mas">+</button> <button id="pantalla">⛶</button> <a id="descargar" href="revista.pdf" download> ⬇ Descargar PDF </a> </div> </header> <main id="visor"> <div id="libro"> <canvas id="izquierda"></canvas> <canvas id="derecha"></canvas> </div> </main> <footer> <input id="barra" type="range" min="1" max="150" value="1" > </footer> <script type="module"> import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"; pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs"; const izquierda = document.getElementById("izquierda"); const derecha = document.getElementById("derecha"); const pagina = document.getElementById("pagina"); const barra = document.getElementById("barra"); const visor = document.getElementById("visor"); let pdf = null; let paginaActual = 1; let zoom = 1; async function iniciar() { try { pdf = await pdfjsLib .getDocument("revista.pdf") .promise; barra.max = pdf.numPages; await mostrar(paginaActual); } catch (error) { console.error(error); pagina.textContent = "Error al cargar el PDF"; } } async function dibujar(numero, canvas) { if (numero > pdf.numPages) { canvas.style.display = "none"; return; } canvas.style.display = "block"; const page = await pdf.getPage(numero); const original = page.getViewport({scale: 1}); const anchoDisponible = Math.min( visor.clientWidth - 40, 1400 ) / 2; const altoDisponible = visor.clientHeight - 40; const escala = Math.min( anchoDisponible / original.width, altoDisponible / original.height ) * zoom; const viewport = page.getViewport({ scale: escala }); canvas.width = viewport.width; canvas.height = viewport.height; await page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise; } async function mostrar(numero) { if (!pdf) return; paginaActual = Math.max( 1, Math.min( numero, pdf.numPages ) ); barra.value = paginaActual; await dibujar( paginaActual, izquierda ); await dibujar( paginaActual + 1, derecha ); if ( paginaActual + 1 <= pdf.numPages ) { pagina.textContent = paginaActual + "–" + (paginaActual + 1) + " / " + pdf.numPages; } else { pagina.textContent = paginaActual + " / " + pdf.numPages; } } document .getElementById("siguiente") .addEventListener( "click", () => { mostrar( paginaActual + 2 ); } ); document .getElementById("anterior") .addEventListener( "click", () => { mostrar( paginaActual - 2 ); } ); document .getElementById("mas") .addEventListener( "click", () => { zoom = Math.min( zoom + 0.15, 2 ); mostrar(paginaActual); } ); document .getElementById("menos") .addEventListener( "click", () => { zoom = Math.max( zoom - 0.15, 0.65 ); mostrar(paginaActual); } ); document .getElementById("pantalla") .addEventListener( "click", () => { if (!document.fullscreenElement) { document.documentElement .requestFullscreen(); } else { document.exitFullscreen(); } } ); barra.addEventListener( "input", () => { mostrar( Number(barra.value) ); } ); document.addEventListener( "keydown", event => { if ( event.key === "ArrowRight" ) { mostrar( paginaActual + 2 ); } if ( event.key === "ArrowLeft" ) { mostrar( paginaActual - 2 ); } } ); window.addEventListener( "resize", () => { mostrar(paginaActual); } ); iniciar(); </script> </body> </html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Mi revista digital</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #202124;
+      color: white;
+    }
+
+    header {
+      height: 58px;
+      background: #111214;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 15px;
+    }
+
+    .titulo {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .controles {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button, a {
+      border: 1px solid #555;
+      background: #292a2e;
+      color: white;
+      padding: 8px 11px;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    button:hover, a:hover {
+      background: #404145;
+    }
+
+    #pagina {
+      min-width: 100px;
+      text-align: center;
+    }
+
+    #visor {
+      height: calc(100vh - 98px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      padding: 20px;
+      background:
+        radial-gradient(circle at center, #414247, #202124);
+    }
+
+    #libro {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center center;
+    }
+
+    canvas {
+      background: white;
+      box-shadow: 0 8px 25px rgba(0,0,0,.5);
+      display: block;
+    }
+
+    #derecha {
+      border-left: 1px solid #999;
+    }
+
+    footer {
+      height: 40px;
+      background: #111214;
+      display: flex;
+      align-items: center;
+      padding: 5px 15px;
+      gap: 10px;
+    }
+
+    #barra {
+      flex: 1;
+    }
+
+    @media (max-width: 700px) {
+
+      .titulo {
+        display: none;
+      }
+
+      header {
+        justify-content: center;
+      }
+
+      #descargar {
+        font-size: 0;
+      }
+
+      #descargar::after {
+        content: "⬇";
+        font-size: 16px;
+      }
+
+      #visor {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+
+  <div class="titulo">
+    Mi revista digital
+  </div>
+
+  <div class="controles">
+
+    <button id="anterior">‹</button>
+
+    <span id="pagina">
+      Cargando...
+    </span>
+
+    <button id="siguiente">›</button>
+
+    <button id="menos">−</button>
+
+    <button id="mas">+</button>
+
+    <button id="pantalla">⛶</button>
+
+    <a id="descargar" href="revista.pdf" download>
+      ⬇ Descargar PDF
+    </a>
+
+  </div>
+
+</header>
+
+<main id="visor">
+
+  <div id="libro">
+
+    <canvas id="izquierda"></canvas>
+
+    <canvas id="derecha"></canvas>
+
+  </div>
+
+</main>
+
+<footer>
+
+  <input
+    id="barra"
+    type="range"
+    min="1"
+    max="150"
+    value="1"
+  >
+
+</footer>
+
+
+<script type="module">
+
+import * as pdfjsLib from
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+
+
+const izquierda =
+document.getElementById("izquierda");
+
+const derecha =
+document.getElementById("derecha");
+
+const pagina =
+document.getElementById("pagina");
+
+const barra =
+document.getElementById("barra");
+
+const visor =
+document.getElementById("visor");
+
+
+let pdf = null;
+
+let paginaActual = 1;
+
+let zoom = 1;
+
+
+async function iniciar() {
+
+  try {
+
+    pdf = await pdfjsLib
+      .getDocument("revista.pdf")
+      .promise;
+
+    barra.max = pdf.numPages;
+
+    await mostrar(paginaActual);
+
+  } catch (error) {
+
+    console.error(error);
+
+    pagina.textContent =
+      "Error al cargar el PDF";
+
+  }
+
+}
+
+
+async function dibujar(numero, canvas) {
+
+  if (numero > pdf.numPages) {
+
+    canvas.style.display = "none";
+
+    return;
+
+  }
+
+  canvas.style.display = "block";
+
+  const page =
+    await pdf.getPage(numero);
+
+  const original =
+    page.getViewport({scale: 1});
+
+
+  const anchoDisponible =
+    Math.min(
+      visor.clientWidth - 40,
+      1400
+    ) / 2;
+
+
+  const altoDisponible =
+    visor.clientHeight - 40;
+
+
+  const escala =
+    Math.min(
+      anchoDisponible / original.width,
+      altoDisponible / original.height
+    ) * zoom;
+
+
+  const viewport =
+    page.getViewport({
+      scale: escala
+    });
+
+
+  canvas.width =
+    viewport.width;
+
+  canvas.height =
+    viewport.height;
+
+
+  await page.render({
+
+    canvasContext:
+      canvas.getContext("2d"),
+
+    viewport:
+      viewport
+
+  }).promise;
+
+}
+
+
+async function mostrar(numero) {
+
+  if (!pdf) return;
+
+
+  paginaActual =
+    Math.max(
+      1,
+      Math.min(
+        numero,
+        pdf.numPages
+      )
+    );
+
+
+  barra.value =
+    paginaActual;
+
+
+  await dibujar(
+    paginaActual,
+    izquierda
+  );
+
+
+  await dibujar(
+    paginaActual + 1,
+    derecha
+  );
+
+
+  if (
+    paginaActual + 1
+    <= pdf.numPages
+  ) {
+
+    pagina.textContent =
+      paginaActual +
+      "–" +
+      (paginaActual + 1) +
+      " / " +
+      pdf.numPages;
+
+  } else {
+
+    pagina.textContent =
+      paginaActual +
+      " / " +
+      pdf.numPages;
+
+  }
+
+}
+
+
+document
+.getElementById("siguiente")
+.addEventListener(
+  "click",
+  () => {
+
+    mostrar(
+      paginaActual + 2
+    );
+
+  }
+);
+
+
+document
+.getElementById("anterior")
+.addEventListener(
+  "click",
+  () => {
+
+    mostrar(
+      paginaActual - 2
+    );
+
+  }
+);
+
+
+document
+.getElementById("mas")
+.addEventListener(
+  "click",
+  () => {
+
+    zoom =
+      Math.min(
+        zoom + 0.15,
+        2
+      );
+
+    mostrar(paginaActual);
+
+  }
+);
+
+
+document
+.getElementById("menos")
+.addEventListener(
+  "click",
+  () => {
+
+    zoom =
+      Math.max(
+        zoom - 0.15,
+        0.65
+      );
+
+    mostrar(paginaActual);
+
+  }
+);
+
+
+document
+.getElementById("pantalla")
+.addEventListener(
+  "click",
+  () => {
+
+    if (!document.fullscreenElement) {
+
+      document.documentElement
+        .requestFullscreen();
+
+    } else {
+
+      document.exitFullscreen();
+
+    }
+
+  }
+);
+
+
+barra.addEventListener(
+  "input",
+  () => {
+
+    mostrar(
+      Number(barra.value)
+    );
+
+  }
+);
+
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.key === "ArrowRight"
+    ) {
+
+      mostrar(
+        paginaActual + 2
+      );
+
+    }
+
+    if (
+      event.key === "ArrowLeft"
+    ) {
+
+      mostrar(
+        paginaActual - 2
+      );
+
+    }
+
+  }
+);
+
+
+window.addEventListener(
+  "resize",
+  () => {
+
+    mostrar(paginaActual);
+
+  }
+);
+
+
+iniciar();
+
+</script>
+
+</body>
+</html>
