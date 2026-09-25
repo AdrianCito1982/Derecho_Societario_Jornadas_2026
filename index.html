@@ -7,6 +7,7 @@
   <title>Derecho Societario Jornadas 2026</title>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
@@ -17,17 +18,18 @@
       height: 100%;
       overflow: hidden;
       font-family: Arial, sans-serif;
-      background: #202124;
+      background: #181818;
       color: white;
     }
 
     header {
       height: 58px;
-      background: #111214;
+      background: #111;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 15px;
+      padding: 8px 16px;
+      border-bottom: 1px solid #333;
     }
 
     .titulo {
@@ -41,9 +43,10 @@
       gap: 6px;
     }
 
-    button, a {
+    button,
+    .descargar {
       border: 1px solid #555;
-      background: #292a2e;
+      background: #292929;
       color: white;
       padding: 8px 11px;
       border-radius: 5px;
@@ -52,13 +55,15 @@
       font-size: 14px;
     }
 
-    button:hover, a:hover {
-      background: #404145;
+    button:hover,
+    .descargar:hover {
+      background: #444;
     }
 
     #pagina {
-      min-width: 100px;
+      min-width: 105px;
       text-align: center;
+      font-size: 14px;
     }
 
     #visor {
@@ -66,40 +71,96 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: auto;
+      overflow: hidden;
       padding: 20px;
       background:
-        radial-gradient(circle at center, #414247, #202124);
+        radial-gradient(
+          circle at center,
+          #414141 0%,
+          #252525 55%,
+          #111 100%
+        );
     }
 
     #libro {
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      transform-origin: center center;
+      perspective: 1800px;
     }
 
-    canvas {
+    .hoja {
       background: white;
-      box-shadow: 0 8px 25px rgba(0,0,0,.5);
-      display: block;
+      box-shadow:
+        0 12px 35px rgba(0,0,0,.55);
+      position: relative;
+      overflow: hidden;
+      transform-origin: left center;
+      backface-visibility: hidden;
     }
 
-    #derecha {
-      border-left: 1px solid #999;
+    .hoja canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hoja.voltear {
+      animation: pasarPagina .65s ease-in-out;
+    }
+
+    @keyframes pasarPagina {
+
+      0% {
+        transform: rotateY(0deg);
+      }
+
+      45% {
+        transform: rotateY(-88deg);
+      }
+
+      100% {
+        transform: rotateY(0deg);
+      }
+
+    }
+
+    .sombra {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 8px;
+      transform: translateX(-50%);
+      background:
+        linear-gradient(
+          to right,
+          transparent,
+          rgba(0,0,0,.22),
+          transparent
+        );
+      pointer-events: none;
+      z-index: 10;
     }
 
     footer {
       height: 40px;
-      background: #111214;
+      background: #111;
       display: flex;
       align-items: center;
-      padding: 5px 15px;
+      padding: 5px 16px;
       gap: 10px;
+      border-top: 1px solid #333;
     }
 
     #barra {
       flex: 1;
+    }
+
+    #estado {
+      font-size: 12px;
+      opacity: .7;
     }
 
     @media (max-width: 700px) {
@@ -112,11 +173,19 @@
         justify-content: center;
       }
 
-      #descargar {
+      .controles {
+        gap: 3px;
+      }
+
+      #pagina {
+        min-width: 75px;
+      }
+
+      .descargar {
         font-size: 0;
       }
 
-      #descargar::after {
+      .descargar::after {
         content: "⬇";
         font-size: 16px;
       }
@@ -124,7 +193,9 @@
       #visor {
         padding: 8px;
       }
+
     }
+
   </style>
 </head>
 
@@ -152,7 +223,11 @@
 
     <button id="pantalla">⛶</button>
 
-    <a id="descargar" href="Derecho_Societario_Jornadas_2026.pdf" download>
+    <a
+      class="descargar"
+      href="Derecho_Societario_Jornadas_2026"
+      download
+    >
       ⬇ Descargar PDF
     </a>
 
@@ -160,17 +235,25 @@
 
 </header>
 
+
 <main id="visor">
 
   <div id="libro">
 
-    <canvas id="izquierda"></canvas>
+    <div id="hojaIzquierda" class="hoja">
+      <canvas id="canvasIzquierda"></canvas>
+    </div>
 
-    <canvas id="derecha"></canvas>
+    <div id="hojaDerecha" class="hoja">
+      <canvas id="canvasDerecha"></canvas>
+    </div>
+
+    <div class="sombra"></div>
 
   </div>
 
 </main>
+
 
 <footer>
 
@@ -182,6 +265,10 @@
     value="1"
   >
 
+  <span id="estado">
+    Preparando revista...
+  </span>
+
 </footer>
 
 
@@ -190,15 +277,32 @@
 import * as pdfjsLib from
 "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
 
+
 pdfjsLib.GlobalWorkerOptions.workerSrc =
 "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
 
-const izquierda =
-document.getElementById("izquierda");
+const PDF = "Derecho_Societario_Jornadas_2026";
 
-const derecha =
-document.getElementById("derecha");
+
+let documento = null;
+
+let paginaActual = 1;
+
+let zoom = 1;
+
+
+const hojaIzquierda =
+document.getElementById("hojaIzquierda");
+
+const hojaDerecha =
+document.getElementById("hojaDerecha");
+
+const canvasIzquierda =
+document.getElementById("canvasIzquierda");
+
+const canvasDerecha =
+document.getElementById("canvasDerecha");
 
 const pagina =
 document.getElementById("pagina");
@@ -206,44 +310,54 @@ document.getElementById("pagina");
 const barra =
 document.getElementById("barra");
 
+const estado =
+document.getElementById("estado");
+
 const visor =
 document.getElementById("visor");
-
-
-let pdf = null;
-
-let paginaActual = 1;
-
-let zoom = 1;
 
 
 async function iniciar() {
 
   try {
 
-    pdf = await pdfjsLib
-      .getDocument("Derecho_Societario_Jornadas_2026.pdf")
-      .promise;
+    documento =
+      await pdfjsLib
+        .getDocument(PDF)
+        .promise;
 
-    barra.max = pdf.numPages;
+    barra.max =
+      documento.numPages;
 
-    await mostrar(paginaActual);
+    estado.textContent =
+      documento.numPages +
+      " páginas";
 
-  } catch (error) {
+    await mostrarPortada();
+
+  }
+
+  catch(error) {
 
     console.error(error);
 
-    pagina.textContent =
-      "Error al cargar el PDF";
+    estado.textContent =
+      "Error al cargar la revista";
 
   }
 
 }
 
 
-async function dibujar(numero, canvas) {
+async function dibujarPagina(
+  numero,
+  canvas
+) {
 
-  if (numero > pdf.numPages) {
+  if (
+    numero < 1 ||
+    numero > documento.numPages
+  ) {
 
     canvas.style.display = "none";
 
@@ -251,30 +365,50 @@ async function dibujar(numero, canvas) {
 
   }
 
+
   canvas.style.display = "block";
 
+
   const page =
-    await pdf.getPage(numero);
+    await documento.getPage(numero);
+
 
   const original =
-    page.getViewport({scale: 1});
+    page.getViewport({
+      scale: 1
+    });
 
 
-  const anchoDisponible =
+  const anchoMax =
     Math.min(
       visor.clientWidth - 40,
       1400
-    ) / 2;
+    );
 
 
-  const altoDisponible =
+  const altoMax =
     visor.clientHeight - 40;
+
+
+  /*
+    En PC mostramos dos páginas.
+    En celular mostramos una.
+  */
+
+  const movil =
+    window.innerWidth < 700;
+
+
+  const anchoPagina =
+    movil
+      ? anchoMax
+      : anchoMax / 2;
 
 
   const escala =
     Math.min(
-      anchoDisponible / original.width,
-      altoDisponible / original.height
+      anchoPagina / original.width,
+      altoMax / original.height
     ) * zoom;
 
 
@@ -304,57 +438,239 @@ async function dibujar(numero, canvas) {
 }
 
 
-async function mostrar(numero) {
+async function ajustarTamano() {
 
-  if (!pdf) return;
+  const movil =
+    window.innerWidth < 700;
 
 
-  paginaActual =
+  const primeraPagina =
+    await documento.getPage(1);
+
+
+  const original =
+    primeraPagina.getViewport({
+      scale: 1
+    });
+
+
+  const anchoMax =
+    Math.min(
+      visor.clientWidth - 40,
+      1400
+    );
+
+
+  const altoMax =
+    visor.clientHeight - 40;
+
+
+  const anchoPagina =
+    movil
+      ? anchoMax
+      : anchoMax / 2;
+
+
+  const escala =
+    Math.min(
+      anchoPagina / original.width,
+      altoMax / original.height
+    ) * zoom;
+
+
+  const ancho =
+    original.width * escala;
+
+
+  const alto =
+    original.height * escala;
+
+
+  hojaIzquierda.style.width =
+    ancho + "px";
+
+  hojaIzquierda.style.height =
+    alto + "px";
+
+
+  hojaDerecha.style.width =
+    ancho + "px";
+
+  hojaDerecha.style.height =
+    alto + "px";
+
+
+  /*
+    En celular ocultamos la segunda página.
+  */
+
+  if (movil) {
+
+    hojaDerecha.style.display =
+      "none";
+
+  }
+
+  else {
+
+    hojaDerecha.style.display =
+      "block";
+
+  }
+
+}
+
+
+async function mostrarPortada() {
+
+  paginaActual = 1;
+
+  await ajustarTamano();
+
+  await dibujarPagina(
+    1,
+    canvasIzquierda
+  );
+
+
+  if (window.innerWidth < 700) {
+
+    pagina.textContent =
+      "1 / " +
+      documento.numPages;
+
+  }
+
+  else {
+
+    await dibujarPagina(
+      2,
+      canvasDerecha
+    );
+
+    pagina.textContent =
+      "1–2 / " +
+      documento.numPages;
+
+  }
+
+  barra.value = 1;
+
+}
+
+
+async function mostrarPaginas(
+  numero,
+  animacion = true
+) {
+
+  numero =
     Math.max(
       1,
       Math.min(
         numero,
-        pdf.numPages
+        documento.numPages
       )
     );
 
 
-  barra.value =
-    paginaActual;
-
-
-  await dibujar(
-    paginaActual,
-    izquierda
-  );
-
-
-  await dibujar(
-    paginaActual + 1,
-    derecha
-  );
-
-
   if (
-    paginaActual + 1
-    <= pdf.numPages
+    animacion &&
+    numero !== paginaActual
   ) {
 
-    pagina.textContent =
-      paginaActual +
-      "–" +
-      (paginaActual + 1) +
-      " / " +
-      pdf.numPages;
+    const hoja =
+      numero > paginaActual
+        ? hojaDerecha
+        : hojaIzquierda;
 
-  } else {
 
-    pagina.textContent =
-      paginaActual +
-      " / " +
-      pdf.numPages;
+    hoja.classList.remove(
+      "voltear"
+    );
+
+
+    void hoja.offsetWidth;
+
+
+    hoja.classList.add(
+      "voltear"
+    );
 
   }
+
+
+  paginaActual = numero;
+
+
+  await ajustarTamano();
+
+
+  const movil =
+    window.innerWidth < 700;
+
+
+  if (movil) {
+
+    await dibujarPagina(
+      paginaActual,
+      canvasIzquierda
+    );
+
+    pagina.textContent =
+      paginaActual +
+      " / " +
+      documento.numPages;
+
+  }
+
+  else {
+
+    /*
+      La página actual siempre
+      queda a la izquierda.
+    */
+
+    await dibujarPagina(
+      paginaActual,
+      canvasIzquierda
+    );
+
+
+    await dibujarPagina(
+      paginaActual + 1,
+      canvasDerecha
+    );
+
+
+    if (
+      paginaActual + 1
+      <= documento.numPages
+    ) {
+
+      pagina.textContent =
+        paginaActual +
+        "–" +
+        (paginaActual + 1) +
+        " / " +
+        documento.numPages;
+
+    }
+
+    else {
+
+      pagina.textContent =
+        paginaActual +
+        " / " +
+        documento.numPages;
+
+    }
+
+  }
+
+
+  barra.value =
+    paginaActual;
 
 }
 
@@ -365,9 +681,18 @@ document
   "click",
   () => {
 
-    mostrar(
-      paginaActual + 2
-    );
+    if (
+      paginaActual <
+      documento.numPages
+    ) {
+
+      mostrarPaginas(
+        window.innerWidth < 700
+          ? paginaActual + 1
+          : paginaActual + 2
+      );
+
+    }
 
   }
 );
@@ -379,9 +704,18 @@ document
   "click",
   () => {
 
-    mostrar(
-      paginaActual - 2
-    );
+    if (paginaActual > 1) {
+
+      mostrarPaginas(
+        window.innerWidth < 700
+          ? paginaActual - 1
+          : Math.max(
+              1,
+              paginaActual - 2
+            )
+      );
+
+    }
 
   }
 );
@@ -391,15 +725,18 @@ document
 .getElementById("mas")
 .addEventListener(
   "click",
-  () => {
+  async () => {
 
     zoom =
       Math.min(
-        zoom + 0.15,
+        zoom + .15,
         2
       );
 
-    mostrar(paginaActual);
+    await mostrarPaginas(
+      paginaActual,
+      false
+    );
 
   }
 );
@@ -409,15 +746,18 @@ document
 .getElementById("menos")
 .addEventListener(
   "click",
-  () => {
+  async () => {
 
     zoom =
       Math.max(
-        zoom - 0.15,
-        0.65
+        zoom - .15,
+        .65
       );
 
-    mostrar(paginaActual);
+    await mostrarPaginas(
+      paginaActual,
+      false
+    );
 
   }
 );
@@ -429,12 +769,16 @@ document
   "click",
   () => {
 
-    if (!document.fullscreenElement) {
+    if (
+      !document.fullscreenElement
+    ) {
 
       document.documentElement
         .requestFullscreen();
 
-    } else {
+    }
+
+    else {
 
       document.exitFullscreen();
 
@@ -448,8 +792,9 @@ barra.addEventListener(
   "input",
   () => {
 
-    mostrar(
-      Number(barra.value)
+    mostrarPaginas(
+      Number(barra.value),
+      false
     );
 
   }
@@ -464,18 +809,26 @@ document.addEventListener(
       event.key === "ArrowRight"
     ) {
 
-      mostrar(
-        paginaActual + 2
+      mostrarPaginas(
+        window.innerWidth < 700
+          ? paginaActual + 1
+          : paginaActual + 2
       );
 
     }
+
 
     if (
       event.key === "ArrowLeft"
     ) {
 
-      mostrar(
-        paginaActual - 2
+      mostrarPaginas(
+        window.innerWidth < 700
+          ? paginaActual - 1
+          : Math.max(
+              1,
+              paginaActual - 2
+            )
       );
 
     }
@@ -488,7 +841,10 @@ window.addEventListener(
   "resize",
   () => {
 
-    mostrar(paginaActual);
+    mostrarPaginas(
+      paginaActual,
+      false
+    );
 
   }
 );
