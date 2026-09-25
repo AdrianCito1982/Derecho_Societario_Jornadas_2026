@@ -1,855 +1,1347 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Derecho Societario Jornadas 2026</title>
+<title>Derecho Societario Jornadas 2026</title>
 
-  <style>
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
+        type="module"></script>
 
-    * {
-      box-sizing: border-box;
+<!-- StPageFlip -->
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background:
+        radial-gradient(circle at center top, #343434 0%, #171717 45%, #090909 100%);
+    color: white;
+    overflow-x: hidden;
+}
+
+/* =========================================================
+   CABECERA
+   ========================================================= */
+
+.header {
+    width: 100%;
+    padding: 18px 20px 12px;
+    text-align: center;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.header p {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: #cfcfcf;
+}
+
+/* =========================================================
+   CONTENEDOR PRINCIPAL
+   ========================================================= */
+
+.main {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 15px 20px;
+}
+
+.viewer {
+    width: min(96vw, 1500px);
+    position: relative;
+}
+
+/* =========================================================
+   ÁREA DEL FLIPBOOK
+   ========================================================= */
+
+#book-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    overflow: hidden;
+
+    min-height: 60vh;
+    max-height: 78vh;
+
+    border-radius: 8px;
+
+    /* Permite zoom sin cortar el contenido */
+    touch-action: none;
+}
+
+#book {
+    position: relative;
+
+    width: 100%;
+    height: 72vh;
+
+    min-height: 500px;
+    max-height: 900px;
+
+    margin: 0 auto;
+
+    transition: transform 0.18s ease;
+}
+
+/* =========================================================
+   PÁGINAS
+   ========================================================= */
+
+.page {
+    background: white;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 0 12px rgba(0,0,0,0.30);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.page canvas {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: contain;
+
+    background: white;
+}
+
+/* Portada */
+.page.cover {
+    background: white;
+}
+
+/* =========================================================
+   CARGANDO
+   ========================================================= */
+
+.loading {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    text-align: center;
+
+    z-index: 100;
+
+    background: rgba(0,0,0,0.78);
+
+    padding: 25px 35px;
+
+    border-radius: 10px;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.loading.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 42px;
+    height: 42px;
+
+    margin: 0 auto 15px;
+
+    border: 4px solid rgba(255,255,255,0.25);
+    border-top-color: white;
+
+    border-radius: 50%;
+
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* =========================================================
+   CONTROLES
+   ========================================================= */
+
+.controls {
+    width: 100%;
+
+    display: flex;
+    flex-wrap: wrap;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 15px;
+}
+
+button,
+.download {
+    border: none;
+
+    background: #252525;
+    color: white;
+
+    padding: 9px 14px;
+
+    border-radius: 6px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
+}
+
+button:hover,
+.download:hover {
+    background: #3c3c3c;
+}
+
+button:active,
+.download:active {
+    transform: scale(0.97);
+}
+
+.download {
+    text-decoration: none;
+}
+
+/* =========================================================
+   SLIDER
+   ========================================================= */
+
+.slider-container {
+    width: min(700px, 90vw);
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    margin: 14px auto 0;
+}
+
+#pageSlider {
+    flex: 1;
+    cursor: pointer;
+}
+
+#pageInfo {
+    min-width: 105px;
+
+    text-align: center;
+
+    font-size: 13px;
+
+    color: #ddd;
+}
+
+/* =========================================================
+   AYUDA
+   ========================================================= */
+
+.help {
+    text-align: center;
+
+    color: #aaa;
+
+    font-size: 12px;
+
+    margin-top: 10px;
+}
+
+/* =========================================================
+   PANTALLA COMPLETA
+   ========================================================= */
+
+.fullscreen .header {
+    display: none;
+}
+
+.fullscreen .main {
+    padding: 0;
+}
+
+.fullscreen .viewer {
+    width: 100vw;
+}
+
+.fullscreen #book-wrapper {
+    height: 100vh;
+    max-height: none;
+
+    border-radius: 0;
+}
+
+.fullscreen #book {
+    height: 92vh;
+}
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.error {
+    max-width: 650px;
+
+    margin: 40px auto;
+
+    padding: 25px;
+
+    background: #421c1c;
+
+    border: 1px solid #813838;
+
+    border-radius: 8px;
+
+    line-height: 1.5;
+
+    text-align: center;
+}
+
+.error code {
+    color: #ffd6d6;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 800px) {
+
+    .header h1 {
+        font-size: 19px;
     }
 
-    html, body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-      background: #181818;
-      color: white;
+    .header p {
+        font-size: 12px;
     }
 
-    header {
-      height: 58px;
-      background: #111;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 16px;
-      border-bottom: 1px solid #333;
+    #book {
+        height: 70vh;
+        min-height: 420px;
     }
 
-    .titulo {
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .controles {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .controls {
+        gap: 6px;
     }
 
     button,
-    .descargar {
-      border: 1px solid #555;
-      background: #292929;
-      color: white;
-      padding: 8px 11px;
-      border-radius: 5px;
-      cursor: pointer;
-      text-decoration: none;
-      font-size: 14px;
+    .download {
+        padding: 8px 10px;
+        font-size: 13px;
     }
 
-    button:hover,
-    .descargar:hover {
-      background: #444;
-    }
-
-    #pagina {
-      min-width: 105px;
-      text-align: center;
-      font-size: 14px;
-    }
-
-    #visor {
-      height: calc(100vh - 98px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      padding: 20px;
-      background:
-        radial-gradient(
-          circle at center,
-          #414141 0%,
-          #252525 55%,
-          #111 100%
-        );
-    }
-
-    #libro {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      perspective: 1800px;
-    }
-
-    .hoja {
-      background: white;
-      box-shadow:
-        0 12px 35px rgba(0,0,0,.55);
-      position: relative;
-      overflow: hidden;
-      transform-origin: left center;
-      backface-visibility: hidden;
-    }
-
-    .hoja canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    .hoja.voltear {
-      animation: pasarPagina .65s ease-in-out;
-    }
-
-    @keyframes pasarPagina {
-
-      0% {
-        transform: rotateY(0deg);
-      }
-
-      45% {
-        transform: rotateY(-88deg);
-      }
-
-      100% {
-        transform: rotateY(0deg);
-      }
-
-    }
-
-    .sombra {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 50%;
-      width: 8px;
-      transform: translateX(-50%);
-      background:
-        linear-gradient(
-          to right,
-          transparent,
-          rgba(0,0,0,.22),
-          transparent
-        );
-      pointer-events: none;
-      z-index: 10;
-    }
-
-    footer {
-      height: 40px;
-      background: #111;
-      display: flex;
-      align-items: center;
-      padding: 5px 16px;
-      gap: 10px;
-      border-top: 1px solid #333;
-    }
-
-    #barra {
-      flex: 1;
-    }
-
-    #estado {
-      font-size: 12px;
-      opacity: .7;
-    }
-
-    @media (max-width: 700px) {
-
-      .titulo {
+    .help {
         display: none;
-      }
+    }
+}
 
-      header {
-        justify-content: center;
-      }
+@media (max-width: 500px) {
 
-      .controles {
-        gap: 3px;
-      }
-
-      #pagina {
-        min-width: 75px;
-      }
-
-      .descargar {
-        font-size: 0;
-      }
-
-      .descargar::after {
-        content: "⬇";
-        font-size: 16px;
-      }
-
-      #visor {
-        padding: 8px;
-      }
-
+    .header {
+        padding: 12px 10px 6px;
     }
 
-  </style>
+    .header h1 {
+        font-size: 17px;
+    }
+
+    .header p {
+        font-size: 11px;
+    }
+
+    #book {
+        height: 65vh;
+        min-height: 360px;
+    }
+
+    .controls {
+        margin-top: 10px;
+    }
+
+    button,
+    .download {
+        font-size: 12px;
+        padding: 7px 9px;
+    }
+}
+
+</style>
 </head>
+
 
 <body>
 
-<header>
+<div class="header">
 
-  <div class="titulo">
-    Derecho Societario Jornadas 2026
-  </div>
+    <h1>Derecho Societario Jornadas 2026</h1>
 
-  <div class="controles">
+    <p>
+        Revista digital
+    </p>
 
-    <button id="anterior">‹</button>
-
-    <span id="pagina">
-      Cargando...
-    </span>
-
-    <button id="siguiente">›</button>
-
-    <button id="menos">−</button>
-
-    <button id="mas">+</button>
-
-    <button id="pantalla">⛶</button>
-
-    <a
-      class="descargar"
-      href="Derecho_Societario_Jornadas_2026.pdf"
-      download
-    >
-      ⬇ Descargar PDF
-    </a>
-
-  </div>
-
-</header>
+</div>
 
 
-<main id="visor">
+<div class="main">
 
-  <div id="libro">
+    <div class="viewer">
 
-    <div id="hojaIzquierda" class="hoja">
-      <canvas id="canvasIzquierda"></canvas>
+        <div id="book-wrapper">
+
+            <div id="book"></div>
+
+            <div id="loading" class="loading">
+
+                <div class="spinner"></div>
+
+                <div id="loadingText">
+                    Preparando la revista...
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="controls">
+
+            <button id="prevBtn" title="Página anterior">
+                ◀ Anterior
+            </button>
+
+            <button id="nextBtn" title="Página siguiente">
+                Siguiente ▶
+            </button>
+
+            <button id="zoomOutBtn" title="Alejar">
+                −
+            </button>
+
+            <button id="zoomResetBtn" title="Zoom original">
+                100%
+            </button>
+
+            <button id="zoomInBtn" title="Acercar">
+                +
+            </button>
+
+            <button id="fullscreenBtn" title="Pantalla completa">
+                ⛶ Pantalla completa
+            </button>
+
+            <a
+                class="download"
+                href="Derecho_Societario_Jornadas_2026.pdf"
+                download
+                title="Descargar PDF"
+            >
+                ⬇ Descargar PDF
+            </a>
+
+        </div>
+
+
+        <div class="slider-container">
+
+            <span id="firstPage">
+                1
+            </span>
+
+            <input
+                id="pageSlider"
+                type="range"
+                min="0"
+                max="149"
+                value="0"
+                step="1"
+            >
+
+            <span id="lastPage">
+                150
+            </span>
+
+        </div>
+
+
+        <div id="pageInfo">
+            Página 1 de 150
+        </div>
+
+
+        <div class="help">
+
+            Arrastrá desde una esquina para pasar la página ·
+            Usá la rueda del mouse para hacer zoom ·
+            En celular, deslizá con el dedo
+
+        </div>
+
     </div>
 
-    <div id="hojaDerecha" class="hoja">
-      <canvas id="canvasDerecha"></canvas>
-    </div>
-
-    <div class="sombra"></div>
-
-  </div>
-
-</main>
-
-
-<footer>
-
-  <input
-    id="barra"
-    type="range"
-    min="1"
-    max="150"
-    value="1"
-  >
-
-  <span id="estado">
-    Preparando revista...
-  </span>
-
-</footer>
+</div>
 
 
 <script type="module">
 
-import * as pdfjsLib from
-"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
+/* =========================================================
+   CONFIGURACIÓN
+   ========================================================= */
 
+const PDF_FILE = "Derecho_Societario_Jornadas_2026.pdf";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+const bookElement = document.getElementById("book");
+const bookWrapper = document.getElementById("book-wrapper");
 
+const loading = document.getElementById("loading");
+const loadingText = document.getElementById("loadingText");
 
-/*
-  ARCHIVO PDF
-*/
+const pageSlider = document.getElementById("pageSlider");
+const pageInfo = document.getElementById("pageInfo");
 
-const PDF =
-"Derecho_Societario_Jornadas_2026.pdf";
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
 
+const zoomInBtn = document.getElementById("zoomInBtn");
+const zoomOutBtn = document.getElementById("zoomOutBtn");
+const zoomResetBtn = document.getElementById("zoomResetBtn");
 
-let documento = null;
+const fullscreenBtn = document.getElementById("fullscreenBtn");
 
-let paginaActual = 1;
+let pdfDocument = null;
+let pageFlip = null;
+
+let totalPages = 0;
 
 let zoom = 1;
 
 
-const hojaIzquierda =
-document.getElementById("hojaIzquierda");
+/* =========================================================
+   IMPORTAR PDF.JS
+   ========================================================= */
 
-const hojaDerecha =
-document.getElementById("hojaDerecha");
+const pdfjsLib =
+    await import(
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
+    );
 
-const canvasIzquierda =
-document.getElementById("canvasIzquierda");
-
-const canvasDerecha =
-document.getElementById("canvasDerecha");
-
-const pagina =
-document.getElementById("pagina");
-
-const barra =
-document.getElementById("barra");
-
-const estado =
-document.getElementById("estado");
-
-const visor =
-document.getElementById("visor");
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
 
-async function iniciar() {
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
 
-  try {
+function setLoading(text) {
 
-    documento =
-      await pdfjsLib
-        .getDocument(PDF)
-        .promise;
-
-    barra.max =
-      documento.numPages;
-
-    estado.textContent =
-      documento.numPages +
-      " páginas";
-
-    await mostrarPortada();
-
-  }
-
-  catch(error) {
-
-    console.error(error);
-
-    estado.textContent =
-      "Error al cargar la revista";
-
-    pagina.textContent =
-      "Error";
-
-  }
+    loadingText.textContent = text;
 
 }
 
 
-async function dibujarPagina(
-  numero,
-  canvas
-) {
+function hideLoading() {
 
-  if (
-    numero < 1 ||
-    numero > documento.numPages
-  ) {
-
-    canvas.style.display = "none";
-
-    return;
-
-  }
-
-
-  canvas.style.display = "block";
-
-
-  const page =
-    await documento.getPage(numero);
-
-
-  const original =
-    page.getViewport({
-      scale: 1
-    });
-
-
-  const anchoMax =
-    Math.min(
-      visor.clientWidth - 40,
-      1400
-    );
-
-
-  const altoMax =
-    visor.clientHeight - 40;
-
-
-  /*
-    En PC mostramos dos páginas.
-    En celular mostramos una.
-  */
-
-  const movil =
-    window.innerWidth < 700;
-
-
-  const anchoPagina =
-    movil
-      ? anchoMax
-      : anchoMax / 2;
-
-
-  const escala =
-    Math.min(
-      anchoPagina / original.width,
-      altoMax / original.height
-    ) * zoom;
-
-
-  const viewport =
-    page.getViewport({
-      scale: escala
-    });
-
-
-  canvas.width =
-    viewport.width;
-
-  canvas.height =
-    viewport.height;
-
-
-  await page.render({
-
-    canvasContext:
-      canvas.getContext("2d"),
-
-    viewport:
-      viewport
-
-  }).promise;
+    loading.classList.add("hidden");
 
 }
 
 
-async function ajustarTamano() {
+function showError(message) {
 
-  const movil =
-    window.innerWidth < 700;
+    loading.classList.remove("hidden");
 
+    loading.innerHTML = `
+        <div style="font-size:40px;margin-bottom:10px;">
+            ⚠
+        </div>
 
-  const primeraPagina =
-    await documento.getPage(1);
-
-
-  const original =
-    primeraPagina.getViewport({
-      scale: 1
-    });
-
-
-  const anchoMax =
-    Math.min(
-      visor.clientWidth - 40,
-      1400
-    );
-
-
-  const altoMax =
-    visor.clientHeight - 40;
-
-
-  const anchoPagina =
-    movil
-      ? anchoMax
-      : anchoMax / 2;
-
-
-  const escala =
-    Math.min(
-      anchoPagina / original.width,
-      altoMax / original.height
-    ) * zoom;
-
-
-  const ancho =
-    original.width * escala;
-
-
-  const alto =
-    original.height * escala;
-
-
-  hojaIzquierda.style.width =
-    ancho + "px";
-
-  hojaIzquierda.style.height =
-    alto + "px";
-
-
-  hojaDerecha.style.width =
-    ancho + "px";
-
-  hojaDerecha.style.height =
-    alto + "px";
-
-
-  if (movil) {
-
-    hojaDerecha.style.display =
-      "none";
-
-  }
-
-  else {
-
-    hojaDerecha.style.display =
-      "block";
-
-  }
+        <div>
+            ${message}
+        </div>
+    `;
 
 }
 
 
-async function mostrarPortada() {
+/* =========================================================
+   RENDERIZAR UNA PÁGINA PDF
+   ========================================================= */
 
-  paginaActual = 1;
+async function renderPage(pageNumber) {
 
-  await ajustarTamano();
+    const pdfPage =
+        await pdfDocument.getPage(pageNumber);
 
-  await dibujarPagina(
-    1,
-    canvasIzquierda
-  );
+    /*
+       Escala moderada para no consumir una cantidad
+       exagerada de memoria con 150 páginas.
+    */
 
+    const viewport =
+        pdfPage.getViewport({
+            scale: 1.25
+        });
 
-  if (window.innerWidth < 700) {
+    const canvas =
+        document.createElement("canvas");
 
-    pagina.textContent =
-      "1 / " +
-      documento.numPages;
+    const context =
+        canvas.getContext("2d", {
+            alpha: false
+        });
 
-  }
+    canvas.width =
+        Math.ceil(viewport.width);
 
-  else {
+    canvas.height =
+        Math.ceil(viewport.height);
 
-    await dibujarPagina(
-      2,
-      canvasDerecha
-    );
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
 
-    pagina.textContent =
-      "1–2 / " +
-      documento.numPages;
+    await pdfPage.render({
+        canvasContext: context,
+        viewport: viewport
+    }).promise;
 
-  }
-
-  barra.value = 1;
-
+    return canvas;
 }
 
 
-async function mostrarPaginas(
-  numero,
-  animacion = true
-) {
+/* =========================================================
+   CREAR LAS PÁGINAS DEL FLIPBOOK
+   ========================================================= */
 
-  numero =
-    Math.max(
-      1,
-      Math.min(
-        numero,
-        documento.numPages
-      )
-    );
+async function createPages() {
 
-
-  if (
-    animacion &&
-    numero !== paginaActual
-  ) {
-
-    const hoja =
-      numero > paginaActual
-        ? hojaDerecha
-        : hojaIzquierda;
-
-
-    hoja.classList.remove(
-      "voltear"
-    );
-
-
-    void hoja.offsetWidth;
-
-
-    hoja.classList.add(
-      "voltear"
-    );
-
-  }
-
-
-  paginaActual = numero;
-
-
-  await ajustarTamano();
-
-
-  const movil =
-    window.innerWidth < 700;
-
-
-  if (movil) {
-
-    await dibujarPagina(
-      paginaActual,
-      canvasIzquierda
-    );
-
-    pagina.textContent =
-      paginaActual +
-      " / " +
-      documento.numPages;
-
-  }
-
-  else {
-
-    await dibujarPagina(
-      paginaActual,
-      canvasIzquierda
-    );
-
-
-    await dibujarPagina(
-      paginaActual + 1,
-      canvasDerecha
-    );
-
-
-    if (
-      paginaActual + 1
-      <= documento.numPages
+    for (
+        let pageNumber = 1;
+        pageNumber <= totalPages;
+        pageNumber++
     ) {
 
-      pagina.textContent =
-        paginaActual +
-        "–" +
-        (paginaActual + 1) +
-        " / " +
-        documento.numPages;
+        setLoading(
+            `Preparando página ${pageNumber} de ${totalPages}...`
+        );
+
+        const canvas =
+            await renderPage(pageNumber);
+
+        const page =
+            document.createElement("div");
+
+        page.className = "page";
+
+        /*
+           La portada es una tapa rígida.
+        */
+
+        if (pageNumber === 1) {
+
+            page.classList.add("cover");
+
+            page.dataset.density = "hard";
+
+        }
+
+        /*
+           También tratamos la última página como tapa
+           para que el libro tenga un cierre correcto.
+        */
+
+        if (pageNumber === totalPages) {
+
+            page.dataset.density = "hard";
+
+        }
+
+        page.appendChild(canvas);
+
+        bookElement.appendChild(page);
 
     }
-
-    else {
-
-      pagina.textContent =
-        paginaActual +
-        " / " +
-        documento.numPages;
-
-    }
-
-  }
-
-
-  barra.value =
-    paginaActual;
 
 }
 
 
-document
-.getElementById("siguiente")
-.addEventListener(
-  "click",
-  () => {
+/* =========================================================
+   CREAR STPAGEFLIP
+   ========================================================= */
 
-    if (
-      paginaActual <
-      documento.numPages
-    ) {
+function createFlipbook() {
 
-      mostrarPaginas(
-        window.innerWidth < 700
-          ? paginaActual + 1
-          : paginaActual + 2
-      );
+    const pages =
+        document.querySelectorAll(".page");
 
+
+    /*
+       Relación aproximada A4.
+       StPageFlip necesita una dimensión base.
+    */
+
+    const pageWidth = 500;
+    const pageHeight = 707;
+
+
+    pageFlip =
+        new St.PageFlip(
+            bookElement,
+            {
+
+                width: pageWidth,
+
+                height: pageHeight,
+
+                size: "stretch",
+
+                minWidth: 280,
+
+                maxWidth: 650,
+
+                minHeight: 396,
+
+                maxHeight: 920,
+
+                autoSize: true,
+
+                showCover: true,
+
+                usePortrait: true,
+
+                mobileScrollSupport: true,
+
+                useMouseEvents: true,
+
+                swipeDistance: 30,
+
+                flippingTime: 850,
+
+                drawShadow: true,
+
+                maxShadowOpacity: 0.55,
+
+                startPage: 0,
+
+                startZIndex: 0,
+
+                disableFlipByClick: false
+
+            }
+        );
+
+
+    /*
+       IMPORTANTE:
+       Registramos el evento ANTES de cargar
+       las páginas.
+    */
+
+    pageFlip.on(
+        "init",
+        function(event) {
+
+            updatePageInfo(
+                event.data
+            );
+
+        }
+    );
+
+
+    pageFlip.on(
+        "flip",
+        function(event) {
+
+            updatePageInfo(
+                event.data
+            );
+
+        }
+    );
+
+
+    pageFlip.on(
+        "changeOrientation",
+        function(event) {
+
+            /*
+               Al cambiar entre vertical/horizontal
+               actualizamos la interfaz.
+            */
+
+            updatePageInfo(
+                pageFlip.getCurrentPageIndex()
+            );
+
+        }
+    );
+
+
+    /*
+       Cargamos las páginas HTML.
+    */
+
+    pageFlip.loadFromHtml(
+        pages
+    );
+
+}
+
+
+/* =========================================================
+   INFORMACIÓN DE PÁGINA
+   ========================================================= */
+
+function updatePageInfo(index) {
+
+    if (!pageFlip) {
+        return;
     }
 
-  }
-);
-
-
-document
-.getElementById("anterior")
-.addEventListener(
-  "click",
-  () => {
-
-    if (paginaActual > 1) {
-
-      mostrarPaginas(
-        window.innerWidth < 700
-          ? paginaActual - 1
-          : Math.max(
-              1,
-              paginaActual - 2
+    const current =
+        Math.max(
+            0,
+            Math.min(
+                index,
+                totalPages - 1
             )
-      );
+        );
+
+
+    pageSlider.value =
+        current;
+
+
+    /*
+       En modo portada mostramos una página.
+       En modo revista mostramos la página inicial
+       del pliego.
+    */
+
+    const displayPage =
+        current + 1;
+
+
+    pageInfo.textContent =
+        `Página ${displayPage} de ${totalPages}`;
+
+
+    /*
+       Actualizamos botones.
+    */
+
+    prevBtn.disabled =
+        current <= 0;
+
+
+    nextBtn.disabled =
+        current >= totalPages - 1;
+
+}
+
+
+/* =========================================================
+   BOTÓN ANTERIOR
+   ========================================================= */
+
+prevBtn.addEventListener(
+    "click",
+    function() {
+
+        if (!pageFlip) {
+            return;
+        }
+
+        /*
+           TOP hace que la animación se origine
+           desde la esquina superior.
+        */
+
+        pageFlip.flipPrev("top");
 
     }
-
-  }
 );
 
 
-document
-.getElementById("mas")
-.addEventListener(
-  "click",
-  async () => {
+/* =========================================================
+   BOTÓN SIGUIENTE
+   ========================================================= */
+
+nextBtn.addEventListener(
+    "click",
+    function() {
+
+        if (!pageFlip) {
+            return;
+        }
+
+        pageFlip.flipNext("top");
+
+    }
+);
+
+
+/* =========================================================
+   SLIDER
+   ========================================================= */
+
+pageSlider.addEventListener(
+    "input",
+    function() {
+
+        if (!pageFlip) {
+            return;
+        }
+
+        const target =
+            Number(
+                pageSlider.value
+            );
+
+        /*
+           Para navegación directa utilizamos
+           animación desde la esquina superior.
+        */
+
+        pageFlip.flip(
+            target,
+            "top"
+        );
+
+    }
+);
+
+
+/* =========================================================
+   ZOOM
+   ========================================================= */
+
+function updateZoom() {
+
+    /*
+       Limitamos el zoom para evitar que el libro
+       desaparezca completamente de la pantalla.
+    */
 
     zoom =
-      Math.min(
-        zoom + .15,
-        2
-      );
-
-    await mostrarPaginas(
-      paginaActual,
-      false
-    );
-
-  }
-);
+        Math.max(
+            0.65,
+            Math.min(
+                2.5,
+                zoom
+            )
+        );
 
 
-document
-.getElementById("menos")
-.addEventListener(
-  "click",
-  async () => {
-
-    zoom =
-      Math.max(
-        zoom - .15,
-        .65
-      );
-
-    await mostrarPaginas(
-      paginaActual,
-      false
-    );
-
-  }
-);
+    bookElement.style.transform =
+        `scale(${zoom})`;
 
 
-document
-.getElementById("pantalla")
-.addEventListener(
-  "click",
-  () => {
+    zoomResetBtn.textContent =
+        `${Math.round(zoom * 100)}%`;
 
-    if (
-      !document.fullscreenElement
-    ) {
+}
 
-      document.documentElement
-        .requestFullscreen();
+
+zoomInBtn.addEventListener(
+    "click",
+    function() {
+
+        zoom += 0.10;
+
+        updateZoom();
 
     }
-
-    else {
-
-      document.exitFullscreen();
-
-    }
-
-  }
 );
 
 
-barra.addEventListener(
-  "input",
-  () => {
+zoomOutBtn.addEventListener(
+    "click",
+    function() {
 
-    mostrarPaginas(
-      Number(barra.value),
-      false
-    );
+        zoom -= 0.10;
 
-  }
+        updateZoom();
+
+    }
+);
+
+
+zoomResetBtn.addEventListener(
+    "click",
+    function() {
+
+        zoom = 1;
+
+        updateZoom();
+
+    }
+);
+
+
+/* =========================================================
+   ZOOM CON RUEDA DEL MOUSE
+   ========================================================= */
+
+bookWrapper.addEventListener(
+    "wheel",
+    function(event) {
+
+        /*
+           Evitamos que la página web haga scroll
+           mientras el cursor está sobre la revista.
+        */
+
+        event.preventDefault();
+
+
+        /*
+           Delta positivo:
+           rueda hacia abajo -> alejamos.
+
+           Delta negativo:
+           rueda hacia arriba -> acercamos.
+        */
+
+        if (event.deltaY < 0) {
+
+            zoom += 0.08;
+
+        } else {
+
+            zoom -= 0.08;
+
+        }
+
+        updateZoom();
+
+    },
+    {
+        passive: false
+    }
+);
+
+
+/* =========================================================
+   CTRL + RUEDA
+   ========================================================= */
+
+document.addEventListener(
+    "wheel",
+    function(event) {
+
+        if (!event.ctrlKey) {
+            return;
+        }
+
+        event.preventDefault();
+
+
+        if (event.deltaY < 0) {
+
+            zoom += 0.05;
+
+        } else {
+
+            zoom -= 0.05;
+
+        }
+
+        updateZoom();
+
+    },
+    {
+        passive: false
+    }
+);
+
+
+/* =========================================================
+   PANTALLA COMPLETA
+   ========================================================= */
+
+fullscreenBtn.addEventListener(
+    "click",
+    async function() {
+
+        try {
+
+            if (!document.fullscreenElement) {
+
+                await document.documentElement.requestFullscreen();
+
+            } else {
+
+                await document.exitFullscreen();
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Fullscreen:",
+                error
+            );
+
+        }
+
+    }
 );
 
 
 document.addEventListener(
-  "keydown",
-  event => {
+    "fullscreenchange",
+    function() {
 
-    if (
-      event.key === "ArrowRight"
-    ) {
+        if (document.fullscreenElement) {
 
-      mostrarPaginas(
-        window.innerWidth < 700
-          ? paginaActual + 1
-          : paginaActual + 2
-      );
+            document.body.classList.add(
+                "fullscreen"
+            );
 
-    }
+            fullscreenBtn.textContent =
+                "⛶ Salir de pantalla completa";
 
+        } else {
 
-    if (
-      event.key === "ArrowLeft"
-    ) {
+            document.body.classList.remove(
+                "fullscreen"
+            );
 
-      mostrarPaginas(
-        window.innerWidth < 700
-          ? paginaActual - 1
-          : Math.max(
-              1,
-              paginaActual - 2
-            )
-      );
+            fullscreenBtn.textContent =
+                "⛶ Pantalla completa";
+
+        }
 
     }
-
-  }
 );
 
 
-window.addEventListener(
-  "resize",
-  () => {
+/* =========================================================
+   TECLADO
+   ========================================================= */
 
-    mostrarPaginas(
-      paginaActual,
-      false
-    );
+document.addEventListener(
+    "keydown",
+    function(event) {
 
-  }
+        if (!pageFlip) {
+            return;
+        }
+
+
+        /*
+           No interferimos si el usuario está
+           escribiendo en un campo.
+        */
+
+        if (
+            event.target.tagName === "INPUT" ||
+            event.target.tagName === "TEXTAREA"
+        ) {
+            return;
+        }
+
+
+        if (event.key === "ArrowLeft") {
+
+            event.preventDefault();
+
+            pageFlip.flipPrev("top");
+
+        }
+
+
+        if (event.key === "ArrowRight") {
+
+            event.preventDefault();
+
+            pageFlip.flipNext("top");
+
+        }
+
+
+        if (event.key === "+" || event.key === "=") {
+
+            zoom += 0.10;
+
+            updateZoom();
+
+        }
+
+
+        if (event.key === "-") {
+
+            zoom -= 0.10;
+
+            updateZoom();
+
+        }
+
+
+        if (event.key === "0") {
+
+            zoom = 1;
+
+            updateZoom();
+
+        }
+
+    }
 );
 
 
-iniciar();
+/* =========================================================
+   CARGA DEL PDF
+   ========================================================= */
+
+async function start() {
+
+    try {
+
+        setLoading(
+            "Abriendo el PDF..."
+        );
+
+
+        pdfDocument =
+            await pdfjsLib.getDocument(
+                PDF_FILE
+            ).promise;
+
+
+        totalPages =
+            pdfDocument.numPages;
+
+
+        /*
+           Actualizamos slider.
+        */
+
+        pageSlider.max =
+            totalPages - 1;
+
+        pageSlider.value = 0;
+
+
+        document.getElementById(
+            "lastPage"
+        ).textContent =
+            totalPages;
+
+
+        /*
+           Creamos las páginas.
+        */
+
+        await createPages();
+
+
+        setLoading(
+            "Construyendo la revista..."
+        );
+
+
+        /*
+           Creamos el motor de flipbook.
+        */
+
+        createFlipbook();
+
+
+        /*
+           Ocultamos el indicador.
+        */
+
+        setTimeout(
+            function() {
+
+                hideLoading();
+
+                updateZoom();
+
+            },
+            400
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Error cargando revista:",
+            error
+        );
+
+
+        showError(
+            `
+            No se pudo cargar la revista.
+
+            <br><br>
+
+            Verificá que el archivo
+
+            <br>
+
+            <code>
+            ${PDF_FILE}
+            </code>
+
+            <br><br>
+
+            esté en la raíz del repositorio.
+            `
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   INICIAR
+   ========================================================= */
+
+start();
 
 </script>
 
