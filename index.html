@@ -81,9 +81,6 @@ body {
 
 #book-wrapper {
     width: 100%;
-    height: 78vh;
-    min-height: 60vh;
-    max-height: 900px;
 
     display: flex;
     justify-content: center;
@@ -91,22 +88,23 @@ body {
 
     overflow: hidden;
 
-    position: relative;
+    min-height: 60vh;
+    max-height: 78vh;
 
     border-radius: 8px;
 
+    /*
+       El desplazamiento cuando hay zoom
+       se maneja mediante translate().
+    */
     touch-action: none;
+
+    position: relative;
 }
 
-/*
-   IMPORTANTE:
-
-   Este contenedor es externo a StPageFlip.
-
-   El zoom se aplica aquí y NO a #book.
-   De esta forma StPageFlip conserva intactas
-   sus coordenadas internas para la animación.
-*/
+/* =========================================================
+   CAPA DE DESPLAZAMIENTO
+   ========================================================= */
 
 #zoom-stage {
     position: relative;
@@ -122,7 +120,13 @@ body {
 
     will-change: transform;
 
-    user-select: none;
+    /*
+       Muy importante:
+
+       StPageFlip sigue trabajando sobre #book.
+       El zoom/desplazamiento se aplica solamente
+       a esta capa externa.
+    */
 }
 
 /* =========================================================
@@ -170,6 +174,8 @@ body {
 
     background: white;
 }
+
+/* Portada */
 
 .page.cover {
     background: white;
@@ -578,7 +584,7 @@ button:disabled {
         <div class="help">
 
             Arrastrá desde una esquina para pasar la página ·
-            Usá la rueda para zoom ·
+            Usá la rueda del mouse para hacer zoom ·
             Con zoom, arrastrá para desplazarte
 
         </div>
@@ -597,41 +603,54 @@ button:disabled {
 const PDF_FILE =
     "Derecho_Societario_Jornadas_2026.pdf";
 
+
 const bookElement =
     document.getElementById("book");
+
 
 const bookWrapper =
     document.getElementById("book-wrapper");
 
+
 const zoomStage =
     document.getElementById("zoom-stage");
+
 
 const loading =
     document.getElementById("loading");
 
+
 const loadingText =
     document.getElementById("loadingText");
+
 
 const pageSlider =
     document.getElementById("pageSlider");
 
+
 const pageInfo =
     document.getElementById("pageInfo");
+
 
 const prevBtn =
     document.getElementById("prevBtn");
 
+
 const nextBtn =
     document.getElementById("nextBtn");
+
 
 const zoomInBtn =
     document.getElementById("zoomInBtn");
 
+
 const zoomOutBtn =
     document.getElementById("zoomOutBtn");
 
+
 const zoomResetBtn =
     document.getElementById("zoomResetBtn");
+
 
 const fullscreenBtn =
     document.getElementById("fullscreenBtn");
@@ -654,7 +673,19 @@ const MIN_ZOOM = 0.65;
 
 const MAX_ZOOM = 3.0;
 
-const ZOOM_STEP = 0.10;
+
+/*
+   Paso de los botones + y -.
+*/
+
+const ZOOM_BUTTON_STEP = 0.10;
+
+
+/*
+   Paso de la rueda.
+*/
+
+const ZOOM_WHEEL_STEP = 0.08;
 
 
 /* =========================================================
@@ -726,7 +757,7 @@ function showError(message) {
 
 
 /* =========================================================
-   RENDERIZAR PÁGINA
+   RENDERIZAR UNA PÁGINA PDF
    ========================================================= */
 
 async function renderPage(pageNumber) {
@@ -746,12 +777,9 @@ async function renderPage(pageNumber) {
 
 
     const context =
-        canvas.getContext(
-            "2d",
-            {
-                alpha: false
-            }
-        );
+        canvas.getContext("2d", {
+            alpha: false
+        });
 
 
     canvas.width =
@@ -769,29 +797,22 @@ async function renderPage(pageNumber) {
 
 
     await pdfPage.render({
-
-        canvasContext:
-            context,
-
-        viewport:
-            viewport
-
+        canvasContext: context,
+        viewport: viewport
     }).promise;
 
 
     return canvas;
-
 }
 
 
 /* =========================================================
-   ENLACES DEL PDF
+   CREAR ENLACES DEL PDF
    ========================================================= */
 
 async function createLinkLayer(
     pdfPage,
-    pageElement,
-    pageNumber
+    pageElement
 ) {
 
     const annotations =
@@ -827,8 +848,7 @@ async function createLinkLayer(
     ) {
 
         if (
-            annotation.subtype !==
-            "Link"
+            annotation.subtype !== "Link"
         ) {
             continue;
         }
@@ -853,17 +873,20 @@ async function createLinkLayer(
                 bounds[2]
             );
 
+
         const top =
             Math.min(
                 bounds[1],
                 bounds[3]
             );
 
+
         const width =
             Math.abs(
                 bounds[2] -
                 bounds[0]
             );
+
 
         const height =
             Math.abs(
@@ -883,11 +906,14 @@ async function createLinkLayer(
         link.style.left =
             `${left / viewport.width * 100}%`;
 
+
         link.style.top =
             `${top / viewport.height * 100}%`;
 
+
         link.style.width =
             `${width / viewport.width * 100}%`;
+
 
         link.style.height =
             `${height / viewport.height * 100}%`;
@@ -914,7 +940,7 @@ async function createLinkLayer(
 
 
         /*
-           ENLACE INTERNO DEL PDF
+           ENLACE INTERNO
         */
 
         else if (
@@ -990,7 +1016,7 @@ async function createLinkLayer(
 
 
 /* =========================================================
-   CREAR PÁGINAS
+   CREAR LAS PÁGINAS
    ========================================================= */
 
 async function createPages() {
@@ -1023,18 +1049,16 @@ async function createPages() {
 
 
         const context =
-            canvas.getContext(
-                "2d",
-                {
-                    alpha: false
-                }
-            );
+            canvas.getContext("2d", {
+                alpha: false
+            });
 
 
         canvas.width =
             Math.ceil(
                 viewport.width
             );
+
 
         canvas.height =
             Math.ceil(
@@ -1045,18 +1069,14 @@ async function createPages() {
         canvas.style.width =
             "100%";
 
+
         canvas.style.height =
             "100%";
 
 
         await pdfPage.render({
-
-            canvasContext:
-                context,
-
-            viewport:
-                viewport
-
+            canvasContext: context,
+            viewport: viewport
         }).promise;
 
 
@@ -1069,10 +1089,11 @@ async function createPages() {
 
 
         /*
-           NO asignamos data-density manualmente.
+           IMPORTANTE:
 
-           showCover:true ya se encarga de convertir
-           primera y última página en tapas.
+           No asignamos data-density="hard".
+
+           showCover:true se encarga de las tapas.
         */
 
         if (
@@ -1103,8 +1124,7 @@ async function createPages() {
 
         await createLinkLayer(
             pdfPage,
-            page,
-            pageNumber
+            page
         );
 
     }
@@ -1113,7 +1133,7 @@ async function createPages() {
 
 
 /* =========================================================
-   CREAR FLIPBOOK
+   CREAR STPAGEFLIP
    ========================================================= */
 
 function createFlipbook() {
@@ -1124,14 +1144,19 @@ function createFlipbook() {
         );
 
 
+    const pageWidth = 500;
+
+    const pageHeight = 707;
+
+
     pageFlip =
         new St.PageFlip(
             bookElement,
             {
 
-                width: 500,
+                width: pageWidth,
 
-                height: 707,
+                height: pageHeight,
 
                 size: "stretch",
 
@@ -1256,61 +1281,44 @@ function updatePageInfo(index) {
 
 
 /* =========================================================
-   PÁGINA ANTERIOR
+   BOTÓN ANTERIOR
    ========================================================= */
-
-function goPrevious() {
-
-    if (
-        !pageFlip ||
-        zoom > 1.01
-    ) {
-        return;
-    }
-
-
-    /*
-       Para retroceder usamos la esquina inferior.
-       StPageFlip soporta explícitamente ambas esquinas.
-    */
-
-    pageFlip.flipPrev(
-        "bottom"
-    );
-
-}
-
 
 prevBtn.addEventListener(
     "click",
-    goPrevious
+    function() {
+
+        if (!pageFlip) {
+            return;
+        }
+
+
+        pageFlip.flipPrev(
+            "top"
+        );
+
+    }
 );
 
 
 /* =========================================================
-   PÁGINA SIGUIENTE
+   BOTÓN SIGUIENTE
    ========================================================= */
-
-function goNext() {
-
-    if (
-        !pageFlip ||
-        zoom > 1.01
-    ) {
-        return;
-    }
-
-
-    pageFlip.flipNext(
-        "top"
-    );
-
-}
-
 
 nextBtn.addEventListener(
     "click",
-    goNext
+    function() {
+
+        if (!pageFlip) {
+            return;
+        }
+
+
+        pageFlip.flipNext(
+            "top"
+        );
+
+    }
 );
 
 
@@ -1322,10 +1330,7 @@ pageSlider.addEventListener(
     "input",
     function() {
 
-        if (
-            !pageFlip ||
-            zoom > 1.01
-        ) {
+        if (!pageFlip) {
             return;
         }
 
@@ -1364,37 +1369,50 @@ function clampZoom() {
 
 
 /* =========================================================
-   LIMITAR DESPLAZAMIENTO
+   LÍMITES DEL DESPLAZAMIENTO
    ========================================================= */
 
 function clampPan() {
 
-    const wrapperWidth =
-        bookWrapper.clientWidth;
+    if (
+        zoom <= 1.001
+    ) {
 
-    const wrapperHeight =
-        bookWrapper.clientHeight;
+        panX = 0;
+
+        panY = 0;
+
+        return;
+
+    }
 
 
-    const stageWidth =
-        zoomStage.offsetWidth;
+    const wrapperRect =
+        bookWrapper.getBoundingClientRect();
 
-    const stageHeight =
-        zoomStage.offsetHeight;
 
+    const stageRect =
+        zoomStage.getBoundingClientRect();
+
+
+    /*
+       Calculamos cuánto contenido ampliado
+       queda fuera de la ventana visible.
+    */
 
     const scaledWidth =
-        stageWidth * zoom;
+        stageRect.width;
+
 
     const scaledHeight =
-        stageHeight * zoom;
+        stageRect.height;
 
 
     const maxX =
         Math.max(
             0,
             (scaledWidth -
-                wrapperWidth) / 2
+                wrapperRect.width) / 2
         );
 
 
@@ -1402,7 +1420,7 @@ function clampPan() {
         Math.max(
             0,
             (scaledHeight -
-                wrapperHeight) / 2
+                wrapperRect.height) / 2
         );
 
 
@@ -1429,7 +1447,7 @@ function clampPan() {
 
 
 /* =========================================================
-   APLICAR ZOOM
+   APLICAR TRANSFORMACIÓN
    ========================================================= */
 
 function applyZoom() {
@@ -1448,8 +1466,12 @@ function applyZoom() {
     }
 
 
-    clampPan();
+    /*
+       Aplicamos primero el desplazamiento
+       y luego el zoom.
 
+       #book no se modifica.
+    */
 
     zoomStage.style.transform =
         `translate(${panX}px, ${panY}px) scale(${zoom})`;
@@ -1459,22 +1481,13 @@ function applyZoom() {
         `${Math.round(zoom * 100)}%`;
 
 
-    /*
-       Cuando hay zoom:
-
-       - no dejamos que StPageFlip reciba
-         el arrastre del mouse;
-
-       - el wrapper se convierte en visor
-         desplazable.
-    */
-
     if (
         zoom > 1.01
     ) {
 
         bookElement.style.pointerEvents =
             "none";
+
 
         bookWrapper.style.cursor =
             "grab";
@@ -1483,6 +1496,7 @@ function applyZoom() {
 
         bookElement.style.pointerEvents =
             "auto";
+
 
         bookWrapper.style.cursor =
             "default";
@@ -1493,14 +1507,16 @@ function applyZoom() {
 
 
 /* =========================================================
-   BOTÓN ZOOM +
+   ZOOM +
    ========================================================= */
 
 zoomInBtn.addEventListener(
     "click",
     function() {
 
-        zoom += ZOOM_STEP;
+        zoom +=
+            ZOOM_BUTTON_STEP;
+
 
         applyZoom();
 
@@ -1509,14 +1525,16 @@ zoomInBtn.addEventListener(
 
 
 /* =========================================================
-   BOTÓN ZOOM -
+   ZOOM -
    ========================================================= */
 
 zoomOutBtn.addEventListener(
     "click",
     function() {
 
-        zoom -= ZOOM_STEP;
+        zoom -=
+            ZOOM_BUTTON_STEP;
+
 
         applyZoom();
 
@@ -1525,7 +1543,7 @@ zoomOutBtn.addEventListener(
 
 
 /* =========================================================
-   BOTÓN ZOOM ORIGINAL
+   RESET ZOOM
    ========================================================= */
 
 zoomResetBtn.addEventListener(
@@ -1537,6 +1555,7 @@ zoomResetBtn.addEventListener(
         panX = 0;
 
         panY = 0;
+
 
         applyZoom();
 
@@ -1558,7 +1577,7 @@ bookWrapper.addEventListener(
         /*
            CTRL + rueda:
 
-           siempre modifica el zoom.
+           zoom.
         */
 
         if (
@@ -1569,13 +1588,16 @@ bookWrapper.addEventListener(
                 event.deltaY < 0
             ) {
 
-                zoom += 0.05;
+                zoom +=
+                    0.05;
 
             } else {
 
-                zoom -= 0.05;
+                zoom -=
+                    0.05;
 
             }
+
 
             applyZoom();
 
@@ -1585,25 +1607,35 @@ bookWrapper.addEventListener(
 
 
         /*
-           Con zoom > 100 %:
-
-           la rueda desplaza el documento.
+           Si estamos ampliados,
+           la rueda desplaza la vista.
         */
 
         if (
             zoom > 1.01
         ) {
 
+            /*
+               Rueda vertical.
+            */
+
             panY -=
                 event.deltaY;
+
+
+            /*
+               Desplazamiento horizontal
+               proporcionado por el touchpad.
+            */
 
             panX -=
                 event.deltaX;
 
 
             /*
-               Shift + rueda
-               para desplazamiento horizontal.
+               Shift + rueda:
+
+               desplazamiento horizontal.
             */
 
             if (
@@ -1623,6 +1655,7 @@ bookWrapper.addEventListener(
             zoomStage.style.transform =
                 `translate(${panX}px, ${panY}px) scale(${zoom})`;
 
+
             return;
 
         }
@@ -1631,19 +1664,21 @@ bookWrapper.addEventListener(
         /*
            Sin zoom:
 
-           rueda arriba = acercar
-           rueda abajo  = alejar
+           mantenemos el comportamiento
+           original de la rueda.
         */
 
         if (
             event.deltaY < 0
         ) {
 
-            zoom += 0.08;
+            zoom +=
+                ZOOM_WHEEL_STEP;
 
         } else {
 
-            zoom -= 0.08;
+            zoom -=
+                ZOOM_WHEEL_STEP;
 
         }
 
@@ -1658,7 +1693,7 @@ bookWrapper.addEventListener(
 
 
 /* =========================================================
-   ARRASTRAR PARA MOVER EL DOCUMENTO
+   ARRASTRAR LA REVISTA CON ZOOM
    ========================================================= */
 
 bookWrapper.addEventListener(
@@ -1672,8 +1707,13 @@ bookWrapper.addEventListener(
         }
 
 
+        /*
+           Solamente botón izquierdo
+           cuando se utiliza mouse.
+        */
+
         if (
-            event.button !== undefined &&
+            event.pointerType === "mouse" &&
             event.button !== 0
         ) {
             return;
@@ -1686,12 +1726,14 @@ bookWrapper.addEventListener(
         panStartX =
             event.clientX;
 
+
         panStartY =
             event.clientY;
 
 
         panOriginX =
             panX;
+
 
         panOriginY =
             panY;
@@ -1709,6 +1751,7 @@ bookWrapper.addEventListener(
 
         } catch (error) {}
 
+
         event.preventDefault();
 
     }
@@ -1716,7 +1759,7 @@ bookWrapper.addEventListener(
 
 
 /* =========================================================
-   MOVIMIENTO DEL PAN
+   MOVER LA REVISTA
    ========================================================= */
 
 bookWrapper.addEventListener(
@@ -1764,7 +1807,7 @@ bookWrapper.addEventListener(
 
 
 /* =========================================================
-   TERMINAR PAN
+   FINALIZAR DESPLAZAMIENTO
    ========================================================= */
 
 function stopPanning(event) {
@@ -1805,19 +1848,6 @@ bookWrapper.addEventListener(
 bookWrapper.addEventListener(
     "pointercancel",
     stopPanning
-);
-
-
-bookWrapper.addEventListener(
-    "pointerleave",
-    function(event) {
-
-        /*
-           No cancelamos automáticamente el pan:
-           pointer capture permite continuar arrastrando.
-        */
-
-    }
 );
 
 
@@ -1932,12 +1962,6 @@ document.addEventListener(
         }
 
 
-        /*
-           Dejamos que StPageFlip recalcule
-           sus dimensiones después de entrar/salir
-           de pantalla completa.
-        */
-
         setTimeout(
             function() {
 
@@ -1950,7 +1974,9 @@ document.addEventListener(
                 }
 
 
-                clampPan();
+                panX = 0;
+
+                panY = 0;
 
                 applyZoom();
 
@@ -1970,43 +1996,41 @@ document.addEventListener(
     "keydown",
     function(event) {
 
+        if (!pageFlip) {
+            return;
+        }
+
+
         if (
-            !pageFlip
+            event.target.tagName === "INPUT" ||
+            event.target.tagName === "TEXTAREA"
         ) {
             return;
         }
 
 
         if (
-            event.target.tagName ===
-            "INPUT" ||
-            event.target.tagName ===
-            "TEXTAREA"
-        ) {
-            return;
-        }
-
-
-        if (
-            event.key ===
-            "ArrowLeft"
+            event.key === "ArrowLeft"
         ) {
 
             event.preventDefault();
 
-            goPrevious();
+            pageFlip.flipPrev(
+                "top"
+            );
 
         }
 
 
         if (
-            event.key ===
-            "ArrowRight"
+            event.key === "ArrowRight"
         ) {
 
             event.preventDefault();
 
-            goNext();
+            pageFlip.flipNext(
+                "top"
+            );
 
         }
 
@@ -2017,7 +2041,8 @@ document.addEventListener(
         ) {
 
             zoom +=
-                ZOOM_STEP;
+                ZOOM_BUTTON_STEP;
+
 
             applyZoom();
 
@@ -2029,7 +2054,8 @@ document.addEventListener(
         ) {
 
             zoom -=
-                ZOOM_STEP;
+                ZOOM_BUTTON_STEP;
+
 
             applyZoom();
 
@@ -2046,6 +2072,7 @@ document.addEventListener(
 
             panY = 0;
 
+
             applyZoom();
 
         }
@@ -2055,7 +2082,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   RECALCULAR AL CAMBIAR EL TAMAÑO
+   REDIMENSIONAR
    ========================================================= */
 
 window.addEventListener(
@@ -2071,7 +2098,14 @@ window.addEventListener(
         }
 
 
-        clampPan();
+        if (
+            zoom > 1.01
+        ) {
+
+            clampPan();
+
+        }
+
 
         applyZoom();
 
@@ -2080,7 +2114,7 @@ window.addEventListener(
 
 
 /* =========================================================
-   CARGAR PDF
+   CARGA DEL PDF
    ========================================================= */
 
 async function start() {
@@ -2132,16 +2166,18 @@ async function start() {
 
                 hideLoading();
 
+
                 zoom = 1;
 
                 panX = 0;
 
                 panY = 0;
 
+
                 applyZoom();
 
             },
-            500
+            400
         );
 
 
