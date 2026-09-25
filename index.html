@@ -1306,33 +1306,29 @@ async function start() {
 
     } catch (error) {
 
-        console.error(
-            "Error cargando revista:",
-            error
-        );
+    console.error(
+        "Error real del Flipbook:",
+        error
+    );
 
+    showError(
+        `
+        <strong>No se pudo inicializar la revista.</strong>
 
-        showError(
-            `
-            No se pudo cargar la revista.
+        <br><br>
 
-            <br><br>
+        El archivo PDF fue encontrado, pero ocurrió
+        un error al construir el Flipbook.
 
-            Verificá que el archivo
+        <br><br>
 
-            <br>
+        <small>
+        ${error.message || error}
+        </small>
+        `
+    );
 
-            <code>
-            ${PDF_FILE}
-            </code>
-
-            <br><br>
-
-            esté en la raíz del repositorio.
-            `
-        );
-
-    }
+}
 
 }
 
